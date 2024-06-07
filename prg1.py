@@ -1,26 +1,27 @@
-def climbingLeaderboard(ranked, player):
-    # Remove duplicates and keep the ranked list in descending order
-    unique_ranked = sorted(set(ranked), reverse=True)
-    
-    results = []
-    index = len(unique_ranked) - 1  # Start from the end of the unique ranked list
-    print("Index",index)
-    for score in player:
-        # Move up the leaderboard until we find the correct position for the player's score
-        while index >= 0 and score >= unique_ranked[index]:
-            index -= 1
-        # The player's rank is the index + 2 because we moved one step too far
-        results.append(index + 2)
-    
-    return results
-
-# Sample Input
-ranked = [100, 90, 90, 80, 75, 60]
-player = [50, 65, 77, 90, 102]
-
-# Get the player's rankings after each game
-result = climbingLeaderboard(ranked, player)
-
-# Print the results
-for rank in result:
-    print(rank)
+import pickle
+from flask import Flask,jsonify,request,app,render_template,url_for
+import numpy as np
+import pandas as pd
+import spacy
+app=Flask(__name__)
+nlp=spacy.load('en_core_web_sm')
+model=pickle.load(open("model.pkl","rb"))
+@app.route('/')
+def home():
+    return render_template("Home.html")
+@app.route('/predict',methods=['POST','GET'])
+def predict():
+    if request.method=="POST":
+        data=request.form.get("inputText")
+        data=nlp(data).vector
+        final_data=np.array(data).reshape(1,-1)
+        output=model.predict(final_data)
+        if output == 0:
+            prediction = "Fake"
+        else:
+            prediction = "Real"
+        return render_template("Home.html", prediction="The prediction is: {}".format(prediction))
+    else:
+        return jsonify({"Invalid":"Invalid Request method"})
+if __name__=="__main__":
+    app.run(debug=True)
